@@ -53,12 +53,6 @@ GET  /api/audit-logs?page=&limit=
 GET  /api/zoho/services | /crm | /desk
 ```
 
-## Known Limitations (deliberate trade-offs)
-
-- **Zoho People + Manager role were descoped.** CRM and Desk were fully wired and verified live; Zoho People's API consistently returned `Invalid OAuth Scope` even after correctly re-authorizing the documented scope — rather than ship a broken third service, it was cut. Final scope: 2 Zoho services, 3 roles. Happy to walk through the debugging.
-- **No password-reset flow** — out of scope for this MVP.
-- **User "delete" is a soft delete** (status → INACTIVE) to preserve audit-log integrity, not a hard delete.
-
 ## Running Locally
 
 ```bash
@@ -71,7 +65,7 @@ cd frontend && cp .env.example .env
 npm install && npm run dev   # :5173
 ```
 
-Demo login (all seeded users, password `Password123!`):
+Demo login:
 
 | Email | Role |
 |---|---|
