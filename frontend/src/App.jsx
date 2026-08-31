@@ -9,8 +9,6 @@ import Dashboard from './pages/Dashboard.jsx';
 import Users from './pages/admin/Users.jsx';
 import Roles from './pages/admin/Roles.jsx';
 import AuditLogs from './pages/admin/AuditLogs.jsx';
-import Crm from './pages/zoho/Crm.jsx';
-import Desk from './pages/zoho/Desk.jsx';
 
 function App() {
   return (
@@ -44,22 +42,6 @@ function App() {
                   element={
                     <RequirePermission permission="AUDIT_VIEW">
                       <AuditLogs />
-                    </RequirePermission>
-                  }
-                />
-                <Route
-                  path="/zoho/crm"
-                  element={
-                    <RequirePermission permission="ZOHO_CRM_VIEW">
-                      <Crm />
-                    </RequirePermission>
-                  }
-                />
-                <Route
-                  path="/zoho/desk"
-                  element={
-                    <RequirePermission permission="ZOHO_DESK_VIEW">
-                      <Desk />
                     </RequirePermission>
                   }
                 />

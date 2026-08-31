@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS zoho_tokens (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  app_name VARCHAR(20) NOT NULL,
+  encrypted_refresh_token TEXT NOT NULL,
+  iv VARCHAR(32) NOT NULL,
+  auth_tag VARCHAR(32) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_zoho_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_zoho_tokens_user_app (user_id, app_name)
+) ENGINE=InnoDB;

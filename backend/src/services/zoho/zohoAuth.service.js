@@ -1,24 +1,19 @@
 import { env } from '../../config/env.js';
-
-// In-memory access token cache, refreshed on demand. Never exposed outside the backend process.
-let cachedToken = null;
-let cachedTokenExpiresAt = 0;
+import { getUserRefreshToken } from './zohoTokenStore.service.js';
 
 const EXPIRY_BUFFER_MS = 60 * 1000;
+const tokenCache = new Map(); // `${appName}:${userId}` -> { accessToken, expiresAt }
 
-/**
- * Real-mode Zoho OAuth: exchanges the long-lived refresh token for a short-lived
- * access token. This follows Zoho's documented refresh-token flow, but has not
- * been exercised against a live Zoho account (no credentials available in this
- * environment) — verify against current Zoho API docs before relying on it.
- */
-export async function getZohoAccessToken() {
-  if (env.ZOHO_DEMO_MODE) {
-    throw new Error('getZohoAccessToken() should not be called while ZOHO_DEMO_MODE is enabled');
+export async function getZohoAccessToken(appName, userId) {
+  const cacheKey = `${appName}:${userId}`;
+  const cached = tokenCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt - EXPIRY_BUFFER_MS) {
+    return cached.accessToken;
   }
 
-  if (cachedToken && Date.now() < cachedTokenExpiresAt - EXPIRY_BUFFER_MS) {
-    return cachedToken;
+  const refreshToken = await getUserRefreshToken(userId, appName);
+  if (!refreshToken) {
+    throw new Error(`Employee ${userId} has not authorized Zoho ${appName} yet`);
   }
 
   const response = await fetch(`${env.ZOHO_ACCOUNTS_URL}/oauth/v2/token`, {
@@ -28,7 +23,7 @@ export async function getZohoAccessToken() {
       grant_type: 'refresh_token',
       client_id: env.ZOHO_CLIENT_ID,
       client_secret: env.ZOHO_CLIENT_SECRET,
-      refresh_token: env.ZOHO_REFRESH_TOKEN,
+      refresh_token: refreshToken,
     }),
   });
 
@@ -41,7 +36,10 @@ export async function getZohoAccessToken() {
     throw new Error('Zoho token refresh response did not include an access_token');
   }
 
-  cachedToken = data.access_token;
-  cachedTokenExpiresAt = Date.now() + (data.expires_in ?? 3600) * 1000;
-  return cachedToken;
+  tokenCache.set(cacheKey, {
+    accessToken: data.access_token,
+    expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
+  });
+
+  return data.access_token;
 }

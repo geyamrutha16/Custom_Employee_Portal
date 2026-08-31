@@ -58,14 +58,27 @@ export default function Dashboard() {
         <div className="row g-3">
           {authorizedServices.map((service) => (
             <div className="col-12 col-sm-6 col-lg-4" key={service.key}>
-              <Link to={service.path} className="text-decoration-none">
-                <div className="card h-100 shadow-sm border-0">
-                  <div className="card-body">
-                    <h3 className="h6 mb-2">{service.label}</h3>
-                    <p className="text-muted small mb-0">Open the {service.label} dashboard</p>
+              {service.external ? (
+                <a href={service.path} target="_blank" rel="noopener noreferrer" className="text-decoration-none">
+                  <div className="card h-100 shadow-sm border-0">
+                    <div className="card-body">
+                      <h3 className="h6 mb-2">
+                        {service.label} <span className="text-muted small">↗</span>
+                      </h3>
+                      <p className="text-muted small mb-0">Opens the real {service.label} portal in a new tab</p>
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </a>
+              ) : (
+                <Link to={service.path} className="text-decoration-none">
+                  <div className="card h-100 shadow-sm border-0">
+                    <div className="card-body">
+                      <h3 className="h6 mb-2">{service.label}</h3>
+                      <p className="text-muted small mb-0">Open the {service.label} dashboard</p>
+                    </div>
+                  </div>
+                </Link>
+              )}
             </div>
           ))}
         </div>
