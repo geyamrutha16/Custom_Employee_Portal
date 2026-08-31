@@ -3,7 +3,8 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { env } from '../config/env.js';
 import { buildAuthorizationUrl, exchangeCodeForRefreshToken } from '../services/zoho/zohoOAuth.service.js';
-import { setUserRefreshToken } from '../services/zoho/zohoTokenStore.service.js';
+import { setUserRefreshToken, clearUserRefreshToken } from '../services/zoho/zohoTokenStore.service.js';
+import { getZohoAccessToken } from '../services/zoho/zohoAuth.service.js';
 import { writeAuditLog } from '../services/auditLog.service.js';
 
 const PORTAL_URLS = { crm: env.ZOHO_CRM_PORTAL_URL, desk: env.ZOHO_DESK_PORTAL_URL };
@@ -23,10 +24,26 @@ function cleanupExpiredStates() {
 
 export const authorizeRedirect = asyncHandler(async (req, res) => {
   const { app: appName } = req.params;
+  const userId = req.user.id;
+
+  // Already authorized? Prove it by actually minting a fresh access_token from the
+  // stored refresh_token (round-trips to Zoho) rather than just checking a row
+  // exists — a row can be stale if the employee revoked access on Zoho's side.
+  // Only on success do we skip Zoho's authorize screen entirely.
+  try {
+    await getZohoAccessToken(appName, userId);
+    return res.redirect(PORTAL_URLS[appName]);
+  } catch (err) {
+    // No token stored, or Zoho rejected it as invalid/revoked. Clear it (a no-op
+    // if nothing was stored) and fall through to a fresh authorization below.
+    console.error(`[zoho oauth] employee ${userId} not treated as already-authorized for ${appName}:`, err.message);
+    await clearUserRefreshToken(userId, appName);
+  }
+
   cleanupExpiredStates();
 
   const state = crypto.randomBytes(24).toString('base64url');
-  pendingStates.set(state, { userId: req.user.id, appName, expiresAt: Date.now() + STATE_TTL_MS });
+  pendingStates.set(state, { userId, appName, expiresAt: Date.now() + STATE_TTL_MS });
 
   res.redirect(buildAuthorizationUrl(appName, state));
 });

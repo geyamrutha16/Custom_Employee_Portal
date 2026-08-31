@@ -27,3 +27,7 @@ export async function setUserRefreshToken(userId, appName, refreshToken) {
     [userId, appName, encrypted, iv, authTag]
   );
 }
+
+export async function clearUserRefreshToken(userId, appName) {
+  await pool.query('DELETE FROM zoho_tokens WHERE user_id = ? AND app_name = ?', [userId, appName]);
+}
