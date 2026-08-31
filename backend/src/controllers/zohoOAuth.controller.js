@@ -32,6 +32,7 @@ export const authorizeRedirect = asyncHandler(async (req, res) => {
   // Only on success do we skip Zoho's authorize screen entirely.
   try {
     await getZohoAccessToken(appName, userId);
+    await writeAuditLog({ userId, action: 'ZOHO_SERVICE_ACCESS', resource: `zoho_${appName}`, req });
     return res.redirect(PORTAL_URLS[appName]);
   } catch (err) {
     // No token stored, or Zoho rejected it as invalid/revoked. Clear it (a no-op
